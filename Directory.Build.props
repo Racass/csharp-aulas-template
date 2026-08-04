@@ -18,9 +18,13 @@
 
     <!-- Nível de warnings da linguagem. -->
     <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+
+    <!-- Analisadores oficiais e regras do .editorconfig também no build. -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
     <!-- Desabilita implicit usings (System, System.Linq, etc.). -->
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 </Project>
-

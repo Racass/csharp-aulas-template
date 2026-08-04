@@ -56,18 +56,54 @@ Repita com `aula-02`, `aula-03`, etc.
 
 ---
 
-## ✅ Verificação automática (CI)
+## ✅ Verificação automática de qualidade
 
-Toda vez que você fizer `push`, o **GitHub Actions** roda:
+Toda vez que você fizer `push` ou abrir um pull request, o
+**GitHub Actions** executa:
 
-1. **Build** de todos os projetos em `sources/`
-2. **Verificação de formatação** (`dotnet format --verify-no-changes`)
+1. restore e build de todos os projetos em `sources/`;
+2. analisadores oficiais do .NET e regras do `.editorconfig`;
+3. verificação de formatação;
+4. testes automatizados, quando existirem;
+5. Gitleaks e verificações de segredos;
+6. arquivos que não podem ser enviados, como `bin`, `obj` e `.vs`;
+7. geração de uma pontuação de qualidade de 0 a 100.
 
-Se o build ou a formatação falharem, você verá um ❌ nos seus commits.
-Um ✅ verde significa que o código está limpo e compilando.
+O workflow falha somente em problemas bloqueantes:
 
-Isso simula um pipeline real de integração contínua usado em empresas —
-tê-lo funcionando no seu GitHub é ótimo para o portfólio.
+- erro de restore ou build;
+- segredo versionado;
+- arquivo gerado ou proibido rastreado pelo Git.
+
+Warnings de estilo, boas práticas e testes existentes são apresentados
+no relatório, mas não bloqueiam o envio.
+
+### Relatórios
+
+O job publica:
+
+- resumo legível na página do GitHub Actions;
+- `report.json` com schema versionado para ferramentas;
+- `report.md` para leitura direta e uso com LLMs;
+- logs e relatórios brutos como artefato.
+
+Detalhes:
+
+- [Schema do JSON](docs/code-quality-report-schema.md)
+- [Regras e pontuação](docs/code-quality-rules.md)
+
+### Executar localmente
+
+No PowerShell 7+, a partir da raiz:
+
+```powershell
+./scripts/Invoke-CodeQuality.ps1
+```
+
+Os arquivos são gerados em `artifacts/code-quality/`.
+
+O Gitleaks é obrigatório no CI. Se ele não estiver instalado localmente,
+o script apresenta um aviso e continua com as verificações próprias.
 
 ---
 
@@ -89,6 +125,8 @@ O curso utiliza o **Visual Studio 2022 ou 2026**.
 - Chaves sempre em nova linha em métodos e classes
 - `using` fora do `namespace`, ordenados com `System` primeiro
 - Valores monetários usam `decimal` (nunca `double`)
+- Warnings são orientações: leia o relatório e corrija primeiro os
+  bloqueantes, depois os itens de maior impacto.
 
 Sua IDE aplica essas regras automaticamente ao salvar.
 

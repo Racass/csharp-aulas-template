@@ -42,6 +42,20 @@ csharp_style_expression_bodied_accessors = when_on_single_line:suggestion
 # --- Pattern matching ---
 csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
 csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_extended_property_pattern = true:suggestion
+
+# --- Clareza e manutenção ---
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:warning
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_null_propagation = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_prefer_simplified_boolean_expressions = true:warning
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_prefer_primary_constructors = false:none
 
 # --- Preferência por this. ---
 dotnet_style_qualification_for_field = false:warning
@@ -69,6 +83,40 @@ csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
 csharp_new_line_before_finally = true
+
+# --- Ordem de modificadores ---
+csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:suggestion
+
+# ============================================================
+# Diagnósticos oficiais — baseline curada para o curso
+# ============================================================
+
+# Estilo e legibilidade
+dotnet_diagnostic.IDE0005.severity = warning
+dotnet_diagnostic.IDE0044.severity = warning
+dotnet_diagnostic.IDE0055.severity = warning
+
+# Performance e uso correto de APIs
+dotnet_diagnostic.CA1828.severity = warning
+dotnet_diagnostic.CA1849.severity = warning
+dotnet_diagnostic.CA1851.severity = warning
+dotnet_diagnostic.CA1860.severity = warning
+
+# Confiabilidade
+dotnet_diagnostic.CA1305.severity = warning
+dotnet_diagnostic.CA2000.severity = warning
+dotnet_diagnostic.CA2016.severity = warning
+dotnet_diagnostic.CA2208.severity = warning
+
+# Segurança
+dotnet_diagnostic.CA2100.severity = warning
+dotnet_diagnostic.CA5350.severity = warning
+
+# Regras avançadas com baixo valor didático nesta fase
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA5394.severity = none
 
 # ============================================================
 # Nomeação — regras canônicas do C#
@@ -115,3 +163,7 @@ dotnet_naming_rule.locals_camel_case.style    = camel_case_style
 dotnet_naming_symbols.locals_and_parameters.applicable_kinds = local, parameter
 dotnet_naming_symbols.locals_and_parameters.applicable_accessibilities = *
 dotnet_naming_style.camel_case_style.capitalization = camel_case
+
+# Migrations são código gerado pelo Entity Framework.
+[**/Migrations/*.cs]
+generated_code = true
