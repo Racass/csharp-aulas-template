@@ -105,6 +105,12 @@ switch ($operation) {
 '@ | Set-Content -Path (Join-Path $tools "dotnet.ps1")
 
     @'
+#!/usr/bin/env pwsh
+& "$PSScriptRoot/dotnet.ps1" @args
+exit $LASTEXITCODE
+'@ | Set-Content -Path (Join-Path $tools "dotnet") -NoNewline
+
+    @'
 [CmdletBinding()]
 param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
 
@@ -127,6 +133,19 @@ switch ($env:FIAP_FAKE_GITLEAKS_MODE) {
     }
 }
 '@ | Set-Content -Path (Join-Path $tools "gitleaks.ps1")
+
+    @'
+#!/usr/bin/env pwsh
+& "$PSScriptRoot/gitleaks.ps1" @args
+exit $LASTEXITCODE
+'@ | Set-Content -Path (Join-Path $tools "gitleaks") -NoNewline
+
+    if (-not $IsWindows) {
+        & chmod +x (Join-Path $tools "dotnet") (Join-Path $tools "gitleaks")
+        if ($LASTEXITCODE -ne 0) {
+            throw "Não foi possível tornar as ferramentas simuladas executáveis."
+        }
+    }
 
     return $tools
 }
@@ -252,6 +271,11 @@ try {
     New-Item -ItemType Directory -Path $script:Workspace -Force | Out-Null
     $tools = New-FakeTools
     $env:PATH = "$tools$([System.IO.Path]::PathSeparator)$originalPath"
+
+    Test-Case "Ferramentas simuladas têm precedência no PATH" {
+        Assert-True ((Get-Command dotnet).Source.StartsWith($tools, [System.StringComparison]::OrdinalIgnoreCase)) "O shim dotnet não foi resolvido"
+        Assert-True ((Get-Command gitleaks).Source.StartsWith($tools, [System.StringComparison]::OrdinalIgnoreCase)) "O shim gitleaks não foi resolvido"
+    }
 
     Test-Case "Fixture limpa produz zero findings" {
         $root = New-Fixture -Name "clean" -ProjectMode clean
