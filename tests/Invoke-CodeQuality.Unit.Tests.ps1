@@ -218,6 +218,27 @@ public class StudentsController
         }
     }
 
+    Test-Case "Entidade de outra aula não gera FIAP3004" {
+        $root = Reset-TestState "project-rule-isolation"
+        $firstProject = Join-Path (Join-Path $root "sources") "aula-01"
+        $secondProject = Join-Path (Join-Path $root "sources") "aula-02"
+        $firstModels = Join-Path $firstProject "Models"
+        $secondControllers = Join-Path $secondProject "Controllers"
+        New-Item -ItemType Directory -Path $firstModels, $secondControllers -Force | Out-Null
+        Set-Content -Path (Join-Path $firstProject "Aula01.csproj") -Value '<Project Sdk="Microsoft.NET.Sdk" />'
+        Set-Content -Path (Join-Path $secondProject "Aula02.csproj") -Value '<Project Sdk="Microsoft.NET.Sdk" />'
+        Set-Content -Path (Join-Path $firstModels "Student.cs") -Value "public class Student { }"
+        Set-Content -Path (Join-Path $secondControllers "StudentsController.cs") -Value "public class StudentsController { public void Search(Student student) { } }"
+        $files = @(
+            "sources/aula-01/Models/Student.cs",
+            "sources/aula-02/Controllers/StudentsController.cs"
+        )
+
+        Test-CustomCodePractices -TrackedFiles $files
+        $ids = @($script:Findings | ForEach-Object { $_.id })
+        Assert-True ($ids -notcontains "FIAP3004") "Modelos não podem vazar entre projetos independentes"
+    }
+
     Test-Case "Parser reconhece diagnóstico do compilador" {
         $root = Reset-TestState "compiler-diagnostic"
         $project = Join-Path $root "Sample.csproj"

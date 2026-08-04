@@ -675,98 +675,112 @@ function Test-PlaintextPasswordPersistence {
 function Test-CustomCodePractices {
     param([string[]]$TrackedFiles)
 
-    $sourceFiles = @($TrackedFiles | Where-Object {
+    $allSourceFiles = @($TrackedFiles | Where-Object {
         $_ -like "*.cs" -and
         $_ -notmatch "(^|/)(bin|obj|Migrations)(/|$)"
     })
 
-    $modelNames = [System.Collections.Generic.HashSet[string]]::new(
-        [System.StringComparer]::Ordinal
-    )
-    foreach ($relativePath in $sourceFiles | Where-Object { $_ -match "(^|/)Models?/" }) {
-        $fullPath = Join-Path $script:Root $relativePath
-        $content = Get-Content -Raw $fullPath
-        foreach ($match in [regex]::Matches($content, "\b(?:class|record|struct)\s+(?<name>[A-Za-z_]\w*)")) {
-            $null = $modelNames.Add($match.Groups["name"].Value)
-        }
+    $projectDirectories = @(Get-ChildItem -Path (Join-Path $script:Root "sources") -Filter "*.csproj" -File -Recurse -ErrorAction SilentlyContinue |
+        ForEach-Object { Get-RelativePath $_.DirectoryName } |
+        Sort-Object Length -Descending)
+    $sourceGroups = $allSourceFiles | Group-Object {
+        $relativePath = $_
+        $projectDirectory = $projectDirectories | Where-Object {
+            $relativePath -eq $_ -or $relativePath.StartsWith("$_/", [System.StringComparison]::OrdinalIgnoreCase)
+        } | Select-Object -First 1
+        if ($projectDirectory) { $projectDirectory } else { "." }
     }
 
-    foreach ($relativePath in $sourceFiles) {
-        $fullPath = Join-Path $script:Root $relativePath
-        $lineNumber = 0
-        foreach ($line in Get-Content $fullPath) {
-            $lineNumber++
-
-            if ($line -match "\bCountAsync\s*\([^;]*\)\s*>\s*0") {
-                Add-Finding `
-                    -Id "FIAP3001" `
-                    -Source "fiap" `
-                    -Category "best-practices" `
-                    -Severity "warning" `
-                    -Title "Contagem usada para verificar existência" `
-                    -Message "CountAsync > 0 consulta uma contagem quando apenas a existência é necessária." `
-                    -File $fullPath `
-                    -Line $lineNumber `
-                    -Recommendation "Use AnyAsync com o mesmo predicado."
-            }
-
-            if ($line -match "\bThread\.Sleep\s*\(") {
-                Add-Finding `
-                    -Id "FIAP3002" `
-                    -Source "fiap" `
-                    -Category "best-practices" `
-                    -Severity "warning" `
-                    -Title "Thread bloqueada por Sleep" `
-                    -Message "Thread.Sleep bloqueia a thread durante a espera." `
-                    -File $fullPath `
-                    -Line $lineNumber `
-                    -Recommendation "Em fluxo assíncrono, prefira await Task.Delay. Em console simples, avalie se a espera é realmente necessária."
-            }
-
-            if ($line -match "_context\.\w+\.Any\s*\(") {
-                Add-Finding `
-                    -Id "FIAP3003" `
-                    -Source "fiap" `
-                    -Category "best-practices" `
-                    -Severity "warning" `
-                    -Title "Consulta síncrona ao banco" `
-                    -Message "A consulta Any síncrona pode bloquear uma requisição assíncrona." `
-                    -File $fullPath `
-                    -Line $lineNumber `
-                    -Recommendation "Use AnyAsync e aguarde o resultado com await."
+    foreach ($sourceGroup in $sourceGroups) {
+        $sourceFiles = @($sourceGroup.Group)
+        $modelNames = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::Ordinal
+        )
+        foreach ($relativePath in $sourceFiles | Where-Object { $_ -match "(^|/)Models?/" }) {
+            $fullPath = Join-Path $script:Root $relativePath
+            $content = Get-Content -Raw $fullPath
+            foreach ($match in [regex]::Matches($content, "\b(?:class|record|struct)\s+(?<name>[A-Za-z_]\w*)")) {
+                $null = $modelNames.Add($match.Groups["name"].Value)
             }
         }
 
-        if ($relativePath -match "(^|/)Controllers?/") {
-            $content = Get-Content -Raw $fullPath
-            foreach ($modelName in $modelNames) {
-                $signaturePattern = "\bpublic\s+(?:async\s+)?[^{;\r\n]+\([^)]*\b$([regex]::Escape($modelName))\s+\w+"
-                if ($content -match $signaturePattern) {
+        foreach ($relativePath in $sourceFiles) {
+            $fullPath = Join-Path $script:Root $relativePath
+            $lineNumber = 0
+            foreach ($line in Get-Content $fullPath) {
+                $lineNumber++
+
+                if ($line -match "\bCountAsync\s*\([^;]*\)\s*>\s*0") {
                     Add-Finding `
-                        -Id "FIAP3004" `
+                        -Id "FIAP3001" `
                         -Source "fiap" `
                         -Category "best-practices" `
                         -Severity "warning" `
-                        -Title "Entidade recebida diretamente pela API" `
-                        -Message "O controller recebe a entidade $modelName diretamente, aumentando o risco de overposting e acoplamento." `
+                        -Title "Contagem usada para verificar existência" `
+                        -Message "CountAsync > 0 consulta uma contagem quando apenas a existência é necessária." `
                         -File $fullPath `
-                        -Recommendation "Crie um DTO específico para os campos aceitos pela operação."
+                        -Line $lineNumber `
+                        -Recommendation "Use AnyAsync com o mesmo predicado."
+                }
+
+                if ($line -match "\bThread\.Sleep\s*\(") {
+                    Add-Finding `
+                        -Id "FIAP3002" `
+                        -Source "fiap" `
+                        -Category "best-practices" `
+                        -Severity "warning" `
+                        -Title "Thread bloqueada por Sleep" `
+                        -Message "Thread.Sleep bloqueia a thread durante a espera." `
+                        -File $fullPath `
+                        -Line $lineNumber `
+                        -Recommendation "Em fluxo assíncrono, prefira await Task.Delay. Em console simples, avalie se a espera é realmente necessária."
+                }
+
+                if ($line -match "_context\.\w+\.Any\s*\(") {
+                    Add-Finding `
+                        -Id "FIAP3003" `
+                        -Source "fiap" `
+                        -Category "best-practices" `
+                        -Severity "warning" `
+                        -Title "Consulta síncrona ao banco" `
+                        -Message "A consulta Any síncrona pode bloquear uma requisição assíncrona." `
+                        -File $fullPath `
+                        -Line $lineNumber `
+                        -Recommendation "Use AnyAsync e aguarde o resultado com await."
                 }
             }
-        }
 
-        if ($relativePath -match "(^|/)DTOs?/") {
-            $content = Get-Content -Raw $fullPath
-            if ($content -notmatch "\[(Required|Range|StringLength|MinLength|MaxLength|EmailAddress|RegularExpression)\b") {
-                Add-Finding `
-                    -Id "FIAP3005" `
-                    -Source "fiap" `
-                    -Category "best-practices" `
-                    -Severity "warning" `
-                    -Title "DTO sem validação declarativa" `
-                    -Message "O DTO não possui atributos de validação para os dados recebidos." `
-                    -File $fullPath `
-                    -Recommendation "Adicione validações coerentes com o domínio, como Required, Range ou StringLength."
+            if ($relativePath -match "(^|/)Controllers?/") {
+                $content = Get-Content -Raw $fullPath
+                foreach ($modelName in $modelNames) {
+                    $signaturePattern = "\bpublic\s+(?:async\s+)?[^{;\r\n]+\([^)]*\b$([regex]::Escape($modelName))\s+\w+"
+                    if ($content -match $signaturePattern) {
+                        Add-Finding `
+                            -Id "FIAP3004" `
+                            -Source "fiap" `
+                            -Category "best-practices" `
+                            -Severity "warning" `
+                            -Title "Entidade recebida diretamente pela API" `
+                            -Message "O controller recebe a entidade $modelName diretamente, aumentando o risco de overposting e acoplamento." `
+                            -File $fullPath `
+                            -Recommendation "Crie um DTO específico para os campos aceitos pela operação."
+                    }
+                }
+            }
+
+            if ($relativePath -match "(^|/)DTOs?/") {
+                $content = Get-Content -Raw $fullPath
+                if ($content -notmatch "\[(Required|Range|StringLength|MinLength|MaxLength|EmailAddress|RegularExpression)\b") {
+                    Add-Finding `
+                        -Id "FIAP3005" `
+                        -Source "fiap" `
+                        -Category "best-practices" `
+                        -Severity "warning" `
+                        -Title "DTO sem validação declarativa" `
+                        -Message "O DTO não possui atributos de validação para os dados recebidos." `
+                        -File $fullPath `
+                        -Recommendation "Adicione validações coerentes com o domínio, como Required, Range ou StringLength."
+                }
             }
         }
     }
