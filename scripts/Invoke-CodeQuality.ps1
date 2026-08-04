@@ -2,6 +2,8 @@
 param(
     [string]$RepositoryRoot = (Get-Location).Path,
     [string]$OutputDirectory = "artifacts/code-quality",
+    [string]$DotnetCommand = "dotnet",
+    [string]$GitleaksCommand = "gitleaks",
     [switch]$Ci,
     [switch]$SkipGitleaks
 )
@@ -820,7 +822,7 @@ function Invoke-Gitleaks {
         return
     }
 
-    $gitleaks = Get-Command gitleaks -ErrorAction SilentlyContinue
+    $gitleaks = Get-Command $GitleaksCommand -ErrorAction SilentlyContinue
     if (-not $gitleaks) {
         Add-Finding `
             -Id "FIAP0003" `
@@ -838,7 +840,7 @@ function Invoke-Gitleaks {
         return
     }
 
-    $versionOutput = @(& gitleaks version 2>$null)
+    $versionOutput = @(& $GitleaksCommand version 2>$null)
     $script:Tools.Add([pscustomobject]@{
         name = "gitleaks"
         version = ($versionOutput -join " ").Trim()
@@ -848,7 +850,7 @@ function Invoke-Gitleaks {
     $reportPath = Join-Path $script:RawDirectory "gitleaks.json"
     $logPath = Join-Path $script:LogDirectory "gitleaks.log"
     $result = Invoke-CapturedCommand `
-        -Command "gitleaks" `
+        -Command $GitleaksCommand `
         -Arguments @(
             "git",
             "--redact",
@@ -1164,7 +1166,7 @@ New-Item -ItemType Directory -Path $script:OutputRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $script:RawDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $script:LogDirectory -Force | Out-Null
 
-$dotnetVersion = @(& dotnet --version 2>$null)
+$dotnetVersion = @(& $DotnetCommand --version 2>$null)
 $script:Tools.Add([pscustomobject]@{
     name = "dotnet"
     version = ($dotnetVersion -join " ").Trim()
@@ -1204,7 +1206,7 @@ foreach ($projectPath in $projectPaths) {
 
     $restoreLog = Join-Path $script:LogDirectory "$safeName-restore.log"
     $restore = Invoke-CapturedCommand `
-        -Command "dotnet" `
+        -Command $DotnetCommand `
         -Arguments @("restore", $projectPath, "--nologo") `
         -LogPath $restoreLog
     Add-DotnetDiagnostics -Output $restore.output -Project $projectPath
@@ -1212,7 +1214,7 @@ foreach ($projectPath in $projectPaths) {
     $buildLog = Join-Path $script:LogDirectory "$safeName-build.log"
     if ($restore.exitCode -eq 0) {
         $build = Invoke-CapturedCommand `
-            -Command "dotnet" `
+            -Command $DotnetCommand `
             -Arguments @(
                 "build", $projectPath,
                 "--no-restore",
@@ -1249,7 +1251,7 @@ foreach ($projectPath in $projectPaths) {
     $formatLog = Join-Path $script:LogDirectory "$safeName-format.log"
     if ($restore.exitCode -eq 0) {
         $format = Invoke-CapturedCommand `
-            -Command "dotnet" `
+            -Command $DotnetCommand `
             -Arguments @(
                 "format", $projectPath,
                 "--verify-no-changes",
@@ -1309,7 +1311,7 @@ else {
         $testName = [System.IO.Path]::GetFileNameWithoutExtension($testProject)
         $testLog = Join-Path $script:LogDirectory "$testName-test.log"
         $testResult = Invoke-CapturedCommand `
-            -Command "dotnet" `
+            -Command $DotnetCommand `
             -Arguments @("test", $testProject, "--no-restore", "--nologo") `
             -LogPath $testLog
         if ($testResult.exitCode -ne 0) {
