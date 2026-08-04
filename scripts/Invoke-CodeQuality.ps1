@@ -437,7 +437,7 @@ function Get-TrackedFiles {
             -Title "Diretório sem repositório Git" `
             -Message "As verificações de arquivos rastreados foram executadas sobre os arquivos existentes." `
             -Recommendation "Inicialize e versione o repositório para obter a análise completa."
-        return @(Get-ChildItem -Path $script:Root -File -Recurse | ForEach-Object {
+        return @(Get-ChildItem -Path $script:Root -File -Recurse -Force | ForEach-Object {
             Get-RelativePath $_.FullName
         })
     }
@@ -448,7 +448,7 @@ function Get-TrackedFiles {
 function Get-AnalysisFiles {
     param([string[]]$TrackedFiles)
 
-    $existingFiles = @(Get-ChildItem -Path $script:Root -File -Recurse -ErrorAction SilentlyContinue |
+    $existingFiles = @(Get-ChildItem -Path $script:Root -File -Recurse -Force -ErrorAction SilentlyContinue |
         Where-Object {
             $_.FullName -notmatch "[\\/](\.git|artifacts|bin|obj|\.vs)[\\/]"
         } |
@@ -575,7 +575,7 @@ function Test-CustomSecrets {
             continue
         }
 
-        $fileInfo = Get-Item $fullPath
+        $fileInfo = Get-Item $fullPath -Force
         if ($fileInfo.Length -gt 1MB) {
             continue
         }

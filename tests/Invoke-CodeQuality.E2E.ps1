@@ -106,7 +106,7 @@ switch ($operation) {
 
     @'
 #!/usr/bin/env pwsh
-& "$PSScriptRoot/dotnet.ps1" @args
+& "$PSScriptRoot/dotnet.ps1" -Arguments $args
 exit $LASTEXITCODE
 '@ | Set-Content -Path (Join-Path $tools "dotnet") -NoNewline
 
@@ -136,7 +136,7 @@ switch ($env:FIAP_FAKE_GITLEAKS_MODE) {
 
     @'
 #!/usr/bin/env pwsh
-& "$PSScriptRoot/gitleaks.ps1" @args
+& "$PSScriptRoot/gitleaks.ps1" -Arguments $args
 exit $LASTEXITCODE
 '@ | Set-Content -Path (Join-Path $tools "gitleaks") -NoNewline
 
