@@ -331,3 +331,5 @@ Write-Host "E2E: $script:Passed passaram; $script:Failed falharam."
 if ($script:Failed -gt 0) {
     exit 1
 }
+
+exit 0
