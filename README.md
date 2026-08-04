@@ -105,6 +105,18 @@ Os arquivos são gerados em `artifacts/code-quality/`.
 O Gitleaks é obrigatório no CI. Se ele não estiver instalado localmente,
 o script apresenta um aviso e continua com as verificações próprias.
 
+### Testar o pipeline
+
+Os testes não dependem de Pester nem de pacotes adicionais:
+
+```powershell
+./tests/Invoke-CodeQuality.Unit.Tests.ps1
+./tests/Invoke-CodeQuality.E2E.ps1
+```
+
+O E2E cria repositórios temporários e ferramentas simuladas, valida os
+relatórios contra o schema JSON e remove todas as fixtures ao terminar.
+
 ---
 
 ## 🔧 IDE

@@ -46,7 +46,9 @@ Se mais de um teto for aplicável, prevalece o menor.
 | `FIAP3005` | Boas práticas | 2 | Não | DTO sem validação declarativa |
 | `FIAP4001` | Boas práticas | 4 | Não | Projeto de teste existente falhou |
 
-IDs `FIAP000x` são informativos e não descontam pontos.
+IDs `FIAP000x` não descontam pontos. Em execução local, eles são
+informativos ou warnings. No CI, `FIAP0096` e `FIAP0097` bloqueiam o
+workflow porque indicam que o Gitleaks não concluiu uma análise válida.
 
 ## Regras oficiais
 

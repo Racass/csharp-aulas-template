@@ -43,6 +43,12 @@ jobs:
           sudo install /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
+      - name: Run quality script tests
+        shell: pwsh
+        run: |
+          ./tests/Invoke-CodeQuality.Unit.Tests.ps1
+          ./tests/Invoke-CodeQuality.E2E.ps1
+
       - name: Run quality analysis
         id: quality
         continue-on-error: true

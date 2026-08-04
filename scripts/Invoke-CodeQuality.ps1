@@ -772,6 +772,27 @@ function Test-CustomCodePractices {
     }
 }
 
+function Add-GitleaksOperationalFailure {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Id,
+        [Parameter(Mandatory)]
+        [string]$Title,
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    Add-Finding `
+        -Id $Id `
+        -Source "fiap" `
+        -Category "security" `
+        -Severity $(if ($Ci) { "error" } else { "warning" }) `
+        -Title $Title `
+        -Message $Message `
+        -Recommendation "Consulte o log bruto do Gitleaks e repita a análise." `
+        -Blocking ([bool]$Ci)
+}
+
 function Invoke-Gitleaks {
     if ($SkipGitleaks) {
         Add-Finding `
@@ -846,25 +867,17 @@ function Invoke-Gitleaks {
             }
         }
         catch {
-            Add-Finding `
+            Add-GitleaksOperationalFailure `
                 -Id "FIAP0097" `
-                -Source "fiap" `
-                -Category "security" `
-                -Severity "warning" `
                 -Title "Relatório do Gitleaks não pôde ser lido" `
-                -Message $_.Exception.Message `
-                -Recommendation "Consulte o log bruto do Gitleaks."
+                -Message $_.Exception.Message
         }
     }
     elseif ($result.exitCode -ne 0) {
-        Add-Finding `
+        Add-GitleaksOperationalFailure `
             -Id "FIAP0096" `
-            -Source "fiap" `
-            -Category "security" `
-            -Severity "warning" `
             -Title "Falha ao executar Gitleaks" `
-            -Message "O Gitleaks terminou com código $($result.exitCode), sem relatório JSON." `
-            -Recommendation "Consulte o log bruto e repita a análise."
+            -Message "O Gitleaks terminou com código $($result.exitCode), sem relatório JSON."
     }
 }
 
@@ -1127,6 +1140,7 @@ function Write-MarkdownReport {
     $lines | Set-Content -Path $Path -Encoding utf8
 }
 
+function Invoke-CodeQuality {
 $script:Root = Resolve-AbsolutePath -Path $RepositoryRoot -BasePath (Get-Location).Path
 $script:OutputRoot = Resolve-AbsolutePath -Path $OutputDirectory -BasePath $script:Root
 $script:RawDirectory = Join-Path $script:OutputRoot "raw"
@@ -1365,4 +1379,9 @@ Write-Output "Status: $status"
 
 if ($exitCode -ne 0) {
     Write-Error "A análise encontrou findings bloqueantes. Consulte os relatórios gerados." -ErrorAction Stop
+}
+}
+
+if ($MyInvocation.InvocationName -ne ".") {
+    Invoke-CodeQuality
 }
