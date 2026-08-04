@@ -11,7 +11,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$script:SchemaVersion = "1.0"
+$script:SchemaVersion = "2.0"
 $script:Findings = [System.Collections.Generic.List[object]]::new()
 $script:Projects = [System.Collections.Generic.List[object]]::new()
 $script:Tools = [System.Collections.Generic.List[object]]::new()
@@ -1012,6 +1012,25 @@ function Get-Score {
     }
 }
 
+function Get-UnscoredScore {
+    $categories = @("build", "security", "hygiene", "style", "best-practices") | ForEach-Object {
+        [pscustomobject][ordered]@{
+            id = $_
+            maximum = 20
+            score = $null
+            deductions = @()
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        raw = $null
+        final = $null
+        maximum = 100
+        categories = @($categories)
+        capsApplied = @()
+    }
+}
+
 function Escape-GitHubCommandValue {
     param([string]$Value)
 
@@ -1059,10 +1078,11 @@ function Write-MarkdownReport {
     )
 
     $lines = [System.Collections.Generic.List[string]]::new()
+    $scoreText = if ($null -eq $Report.score.final) { "Não avaliada" } else { "$($Report.score.final)/100" }
     $lines.Add("# Relatório de qualidade C#")
     $lines.Add("")
     $lines.Add("- **Status:** $($Report.status)")
-    $lines.Add("- **Pontuação:** $($Report.score.final)/100")
+    $lines.Add("- **Pontuação:** $scoreText")
     $lines.Add("- **Commit:** $($Report.repository.commit)")
     $lines.Add("- **Gerado em:** $($Report.generatedAtUtc)")
     $lines.Add("")
@@ -1081,7 +1101,8 @@ function Write-MarkdownReport {
     $lines.Add("| Categoria | Pontuação | Descontos únicos |")
     $lines.Add("|---|---:|---:|")
     foreach ($category in $Report.score.categories) {
-        $lines.Add("| $($category.id) | $($category.score)/20 | $($category.deductions.Count) |")
+        $categoryScore = if ($null -eq $category.score) { "N/A" } else { "$($category.score)/20" }
+        $lines.Add("| $($category.id) | $categoryScore | $($category.deductions.Count) |")
     }
     $lines.Add("")
 
@@ -1340,7 +1361,8 @@ catch {
 }
 
 Merge-Findings
-$score = Get-Score
+$hasProjects = $script:Projects.Count -gt 0
+$score = if ($hasProjects) { Get-Score } else { Get-UnscoredScore }
 $blockingCount = @($script:Findings | Where-Object { $_.blocking }).Count
 $occurrenceMeasure = $script:Findings | Measure-Object -Property occurrenceCount -Sum
 $occurrenceTotal = if ($null -eq $occurrenceMeasure -or $null -eq $occurrenceMeasure.Sum) {
@@ -1349,7 +1371,15 @@ $occurrenceTotal = if ($null -eq $occurrenceMeasure -or $null -eq $occurrenceMea
 else {
     [int]$occurrenceMeasure.Sum
 }
-$status = if ($blockingCount -gt 0) { "failed" } else { "passed" }
+$status = if ($blockingCount -gt 0) {
+    "failed"
+}
+elseif (-not $hasProjects) {
+    "not-scored"
+}
+else {
+    "passed"
+}
 $exitCode = if ($blockingCount -gt 0) { 1 } else { 0 }
 
 $report = [pscustomobject][ordered]@{
@@ -1390,7 +1420,7 @@ if ($Ci -and $env:GITHUB_STEP_SUMMARY) {
 
 Write-Output "Relatório JSON: $jsonPath"
 Write-Output "Relatório Markdown: $markdownPath"
-Write-Output "Pontuação: $($score.final)/100"
+Write-Output $(if ($null -eq $score.final) { "Pontuação: não avaliada" } else { "Pontuação: $($score.final)/100" })
 Write-Output "Status: $status"
 
 if ($exitCode -ne 0) {

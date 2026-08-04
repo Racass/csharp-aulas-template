@@ -8,7 +8,7 @@ O schema formal está em
 
 ## Versão
 
-`schemaVersion` utiliza versionamento próprio. A versão atual é `1.0`.
+`schemaVersion` utiliza versionamento próprio. A versão atual é `2.0`.
 
 - Alteração compatível: novo campo opcional.
 - Alteração incompatível: remoção, renomeação ou mudança de tipo exige
@@ -19,12 +19,17 @@ O schema formal está em
 | Campo | Uso |
 |---|---|
 | `repository` | Raiz, branch e commit analisados |
-| `status` | `passed` ou `failed` |
+| `status` | `passed`, `failed` ou `not-scored` |
 | `score` | Pontuação bruta, final, categorias e tetos |
 | `summary` | Contagens consolidadas |
 | `tools` | Versões do .NET e Gitleaks |
 | `projects` | Resultado de restore, build e format por projeto |
 | `findings` | Diagnósticos normalizados |
+
+Quando não existe nenhum `.csproj` em `sources/`, `status` é
+`not-scored`, `score.raw` e `score.final` são `null` e as categorias
+também não recebem nota. Findings bloqueantes ainda podem tornar o
+status `failed`, mesmo sem projetos.
 
 ## Finding
 
@@ -63,4 +68,3 @@ categoria, regra, projeto ou arquivo sem analisar logs de texto.
 O arquivo `report.md` contém os mesmos resultados em formato textual
 determinístico. Ele é mais adequado para anexar a uma conversa com uma
 LLM porque explicita pontuação, bloqueantes, arquivos e recomendações.
-

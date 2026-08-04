@@ -2,6 +2,8 @@
 
 O pipeline produz uma pontuação independente de 0 a 100. Ela auxilia o
 aluno e o professor, mas não altera automaticamente a nota acadêmica.
+A pontuação só é calculada depois que existe ao menos um `.csproj` em
+`sources/`; antes disso, o relatório usa o status `not-scored`.
 
 ## Categorias
 

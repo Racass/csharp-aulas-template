@@ -184,6 +184,14 @@ try {
         Assert-Equal 3 $score.capsApplied.Count "Todos os tetos aplicáveis devem ser relatados"
     }
 
+    Test-Case "Repositório sem projetos não recebe pontuação" {
+        $score = Get-UnscoredScore
+        Assert-True ($null -eq $score.raw) "A pontuação bruta deve ser nula"
+        Assert-True ($null -eq $score.final) "A pontuação final deve ser nula"
+        Assert-Equal 5 $score.categories.Count "As cinco categorias devem permanecer no contrato"
+        Assert-True ($null -eq $score.categories[0].score) "Categorias sem projeto não devem receber nota"
+    }
+
     Test-Case "Regras pedagógicas encontram padrões conhecidos" {
         $root = Reset-TestState "custom-rules"
         $sourcesDirectory = Join-Path $root "sources"

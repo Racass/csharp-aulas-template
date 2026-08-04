@@ -17,7 +17,7 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.0"
+      "const": "2.0"
     },
     "generatedAtUtc": {
       "type": "string",
@@ -33,7 +33,7 @@
       }
     },
     "status": {
-      "enum": ["passed", "failed"]
+      "enum": ["passed", "failed", "not-scored"]
     },
     "exitCode": {
       "type": "integer"
@@ -42,8 +42,8 @@
       "type": "object",
       "required": ["raw", "final", "maximum", "categories", "capsApplied"],
       "properties": {
-        "raw": { "type": "integer", "minimum": 0, "maximum": 100 },
-        "final": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "raw": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+        "final": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
         "maximum": { "const": 100 },
         "categories": {
           "type": "array",
@@ -110,7 +110,7 @@
                 ]
               },
               "maximum": { "const": 20 },
-              "score": { "type": "integer", "minimum": 0, "maximum": 20 },
+              "score": { "type": ["integer", "null"], "minimum": 0, "maximum": 20 },
               "deductions": {
                 "type": "array",
                 "items": {

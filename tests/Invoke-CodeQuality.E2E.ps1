@@ -213,8 +213,10 @@ function Invoke-QualityFixture {
     )
 
     $previousMode = $env:FIAP_FAKE_GITLEAKS_MODE
+    $previousStepSummary = $env:GITHUB_STEP_SUMMARY
     try {
         $env:FIAP_FAKE_GITLEAKS_MODE = $GitleaksMode
+        $env:GITHUB_STEP_SUMMARY = $null
         $arguments = @(
             "-NoProfile",
             "-File", $script:QualityScript,
@@ -230,6 +232,7 @@ function Invoke-QualityFixture {
     }
     finally {
         $env:FIAP_FAKE_GITLEAKS_MODE = $previousMode
+        $env:GITHUB_STEP_SUMMARY = $previousStepSummary
     }
 
     if ($ExpectedProcessResult -eq "success") {
@@ -250,11 +253,23 @@ function Invoke-QualityFixture {
 }
 
 $originalPath = $env:PATH
+$originalStepSummary = $env:GITHUB_STEP_SUMMARY
 try {
     New-Item -ItemType Directory -Path $script:Workspace -Force | Out-Null
+    $summaryProbe = Join-Path $script:Workspace "github-step-summary.md"
+    Set-Content -Path $summaryProbe -Value "summary-sentinel"
+    $env:GITHUB_STEP_SUMMARY = $summaryProbe
     $tools = New-FakeTools
     $script:FakeDotnet = Join-Path $tools "dotnet.ps1"
     $script:FakeGitleaks = Join-Path $tools "gitleaks.ps1"
+
+    Test-Case "Repositório sem projetos não é pontuado" {
+        $root = New-Fixture -Name "not-scored"
+        $report = Invoke-QualityFixture -Root $root -ExpectedProcessResult success
+        Assert-Equal "not-scored" $report.status "Sem projeto o status deve ser not-scored"
+        Assert-True ($null -eq $report.score.raw) "Sem projeto não deve existir pontuação bruta"
+        Assert-True ($null -eq $report.score.final) "Sem projeto não deve existir pontuação final"
+    }
 
     Test-Case "Fixture limpa produz zero findings" {
         $root = New-Fixture -Name "clean" -ProjectMode clean
@@ -273,14 +288,14 @@ try {
     }
 
     Test-Case "Arquivo proibido rastreado bloqueia e aplica teto 59" {
-        $root = New-Fixture -Name "forbidden" -ForbiddenFile
+        $root = New-Fixture -Name "forbidden" -ProjectMode clean -ForbiddenFile
         $report = Invoke-QualityFixture -Root $root -ExpectedProcessResult failure
         Assert-Equal 59 $report.score.final "Arquivo proibido deve aplicar teto 59"
         Assert-True (@($report.findings.id) -contains "FIAP1001") "FIAP1001 não foi gerado"
     }
 
     Test-Case "Segredo commitado bloqueia e aplica teto 9" {
-        $root = New-Fixture -Name "committed-secret" -CommittedSecret
+        $root = New-Fixture -Name "committed-secret" -ProjectMode clean -CommittedSecret
         $report = Invoke-QualityFixture -Root $root -ExpectedProcessResult failure
         Assert-Equal 9 $report.score.final "Segredo deve aplicar teto 9"
         Assert-True (@($report.findings.id) -contains "FIAP1002") "FIAP1002 não foi gerado"
@@ -289,7 +304,7 @@ try {
     }
 
     Test-Case "Segredo ignorado é advisory" {
-        $root = New-Fixture -Name "ignored-secret" -IgnoredSecret
+        $root = New-Fixture -Name "ignored-secret" -ProjectMode clean -IgnoredSecret
         $report = Invoke-QualityFixture -Root $root -ExpectedProcessResult success
         Assert-Equal "passed" $report.status "Segredo ignorado não deve bloquear"
         Assert-True (@($report.findings.id) -contains "FIAP2102") "FIAP2102 não foi gerado"
@@ -318,9 +333,14 @@ try {
         Assert-True ($null -ne $finding) "FIAP0097 não foi gerado"
         Assert-True $finding.blocking "FIAP0097 deve bloquear no CI"
     }
+
+    Test-Case "Fixtures E2E não contaminam o Job Summary" {
+        Assert-Equal "summary-sentinel" (Get-Content -Raw $summaryProbe).Trim() "O E2E não deve escrever relatórios de fixture no summary"
+    }
 }
 finally {
     $env:PATH = $originalPath
+    $env:GITHUB_STEP_SUMMARY = $originalStepSummary
     if (Test-Path $script:Workspace) {
         Remove-Item -Path $script:Workspace -Recurse -Force
     }

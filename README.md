@@ -69,6 +69,9 @@ Toda vez que você fizer `push` ou abrir um pull request, o
 6. arquivos que não podem ser enviados, como `bin`, `obj` e `.vs`;
 7. geração de uma pontuação de qualidade de 0 a 100.
 
+Enquanto ainda não existir nenhum projeto `.csproj` em `sources/`, o
+relatório mostra **não avaliado** em vez de atribuir uma pontuação.
+
 O workflow falha somente em problemas bloqueantes:
 
 - erro de restore ou build;
