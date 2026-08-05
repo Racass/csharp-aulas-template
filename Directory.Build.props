@@ -27,4 +27,11 @@
     <!-- Desabilita implicit usings (System, System.Linq, etc.). -->
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers"
+                      Version="1.1.118"
+                      PrivateAssets="all"
+                      IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+  </ItemGroup>
 </Project>

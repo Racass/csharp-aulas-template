@@ -29,6 +29,9 @@ indent_size = 2
 # ============================================================
 [*.cs]
 
+# Linhas em branco podem preservar a indentação do bloco.
+trim_trailing_whitespace = false
+
 # --- Uso de var ---
 csharp_style_var_for_built_in_types = false:suggestion
 csharp_style_var_when_type_is_apparent = true:none
@@ -83,6 +86,16 @@ csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
 csharp_new_line_before_finally = true
+dotnet_style_allow_multiple_blank_lines_experimental = false
+dotnet_style_allow_statement_immediately_after_block_experimental = false
+
+# Rider/ReSharper: uma linha em branco antes e depois de if/while/for/etc.
+resharper_csharp_blank_lines_before_block_statements = 1
+resharper_csharp_blank_lines_after_block_statements = 1
+
+# Rider/ReSharper: preferir string.Empty a "".
+resharper_empty_string = string_empty
+resharper_arrange_empty_string_highlighting = warning
 
 # --- Ordem de modificadores ---
 csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:suggestion
@@ -95,6 +108,22 @@ csharp_preferred_modifier_order = public,private,protected,internal,file,static,
 dotnet_diagnostic.IDE0005.severity = warning
 dotnet_diagnostic.IDE0044.severity = warning
 dotnet_diagnostic.IDE0055.severity = warning
+dotnet_diagnostic.IDE2000.severity = warning
+dotnet_diagnostic.IDE2003.severity = warning
+
+# StyleCop é usado somente para exigir string.Empty em todos os IDEs e no build.
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.AlternativeRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.DocumentationRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.LayoutRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.MaintainabilityRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.NamingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.OrderingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.ReadabilityRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.SpacingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.SpecialRules.severity = none
+dotnet_diagnostic.SA0001.severity = none
+dotnet_diagnostic.SA1122.severity = warning
+dotnet_diagnostic.SA1516.severity = none
 
 # Performance e uso correto de APIs
 dotnet_diagnostic.CA1828.severity = warning
